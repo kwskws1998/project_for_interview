@@ -91,6 +91,16 @@ def _command_for(
     ]
     if args.device:
         command.extend(["--device", args.device])
+    if args.wandb:
+        command.append("--wandb")
+        command.extend(["--wandb_project", args.wandb_project])
+        if args.wandb_entity:
+            command.extend(["--wandb_entity", args.wandb_entity])
+        group = args.wandb_group or f"{args.suite}_{algo}"
+        command.extend(["--wandb_group", group])
+        beta_suffix = f"_beta{beta}" if beta is not None else ""
+        command.extend(["--wandb_name", f"{algo}_{env_id}_seed{seed}{beta_suffix}"])
+        command.extend(["--wandb_mode", args.wandb_mode])
     if algo in cars_like:
         appraiser = args.cars_appraiser
         if algo == "ppo_random_phi":
@@ -196,6 +206,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--beta_ablation", action="store_true")
     parser.add_argument("--intrinsic_coef", type=float, default=0.05)
     parser.add_argument("--noveld_scale_fac", type=float, default=0.5)
+    parser.add_argument("--wandb", action="store_true")
+    parser.add_argument("--wandb_project", default="carsrl")
+    parser.add_argument("--wandb_entity", default=None)
+    parser.add_argument("--wandb_group", default=None)
+    parser.add_argument("--wandb_mode", choices=["online", "offline", "disabled"], default="online")
     parser.add_argument("--execute", action="store_true", help="Actually run commands. Default is dry-run.")
     parser.add_argument("--stop_on_failure", action="store_true")
     return parser

@@ -3,6 +3,7 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.cache/
 
 runs/
 checkpoints/
@@ -10,3 +11,15 @@ wandb/
 
 .DS_Store
 .env
+.venv/
+venv/
+
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.bin
+*.onnx
+*.gguf
+*.npz
+*.npy

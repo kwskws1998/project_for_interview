@@ -161,6 +161,21 @@ Actually execute the generated sweep:
 python scripts/launch_experiments.py --suite sanity --algos ppo ppo_rnd ppo_icm ppo_ride ppo_noveld ppo_cars --total_steps 1000000 --execute --stop_on_failure
 ```
 
+Enable Weights & Biases logging for a single run:
+
+```bash
+python -m carsrl.train \
+  --algo ppo_cars \
+  --env MiniGrid-DoorKey-8x8-v0 \
+  --seed 0 \
+  --cars_appraiser mock \
+  --total_steps 64 \
+  --wandb \
+  --wandb_project carsrl \
+  --wandb_group smoke \
+  --wandb_mode offline
+```
+
 Evaluate a trained checkpoint:
 
 ```bash
@@ -303,6 +318,8 @@ python scripts/launch_experiments.py \
   --slm_max_new_tokens 96 \
   --slm_interval 8 \
   --total_steps 1000000 \
+  --wandb \
+  --wandb_project carsrl \
   --execute \
   --stop_on_failure
 ```

@@ -122,6 +122,48 @@ def _write_config(path: Path, config: ExperimentConfig) -> None:
         json.dump(asdict(config), handle, indent=2, sort_keys=True)
 
 
+def _init_wandb(config: ExperimentConfig, run_dir: Path) -> Any | None:
+    if not config.logging.wandb_enabled:
+        return None
+    if config.logging.wandb_mode == "disabled":
+        return None
+    try:
+        import wandb
+    except ImportError as exc:
+        raise RuntimeError("wandb logging requested, but wandb is not installed. Run `pip install wandb`.") from exc
+
+    name = config.logging.wandb_name or run_dir.name
+    init_kwargs: dict[str, Any] = {
+        "project": config.logging.wandb_project,
+        "name": name,
+        "mode": config.logging.wandb_mode,
+        "dir": str(run_dir),
+        "config": asdict(config),
+        "tags": [config.algo, config.env_id],
+    }
+    if config.logging.wandb_entity:
+        init_kwargs["entity"] = config.logging.wandb_entity
+    if config.logging.wandb_group:
+        init_kwargs["group"] = config.logging.wandb_group
+    return wandb.init(**init_kwargs)
+
+
+def _is_wandb_scalar(value: Any) -> bool:
+    return isinstance(value, (int, float, bool, np.integer, np.floating, np.bool_))
+
+
+def _wandb_payload(prefix: str, data: dict[str, Any]) -> dict[str, Any]:
+    payload: dict[str, Any] = {}
+    for key, value in data.items():
+        if value is None:
+            continue
+        if _is_wandb_scalar(value):
+            payload[f"{prefix}/{key}"] = float(value) if isinstance(value, (np.integer, np.floating, np.bool_)) else value
+        elif isinstance(value, str) and len(value) <= 240:
+            payload[f"{prefix}/{key}"] = value
+    return payload
+
+
 def _cars_metrics_for_env(cars_episode_metrics: dict[int, dict[str, Any]] | None, env_index: int) -> dict[str, Any]:
     defaults = {
         "shaped_return": 0.0,
@@ -306,6 +348,7 @@ class PPOTrainer:
         run_dir = Path(cfg.logging.run_dir) / f"{cfg.algo}_{cfg.env_id}_seed{cfg.seed}_{_timestamp()}"
         run_dir.mkdir(parents=True, exist_ok=True)
         _write_config(run_dir / "config.json", cfg)
+        wandb_run = _init_wandb(cfg, run_dir)
 
         envs = make_vector_minigrid_env(cfg.env_id, cfg.ppo.num_envs, cfg.seed)
         action_dim = envs.single_action_space.n
@@ -461,6 +504,8 @@ class PPOTrainer:
                     ):
                         writer.writerow(record)
                         csv_handle.flush()
+                        if wandb_run is not None:
+                            wandb_run.log(_wandb_payload("episode", record), step=global_step)
                         episodes += 1
 
                     next_obs = next_obs_out_tensor
@@ -530,22 +575,23 @@ class PPOTrainer:
                     }
                     mean_intrinsic_stats = _mean_dicts(rollout_intrinsic_stats)
                     cars_stats = cars.appraiser_stats() if cars is not None else {}
-                    event_writer.write(
-                        {
-                            "type": "ppo_update",
-                            "global_step": global_step,
-                            "episodes": episodes,
-                            "fps": global_step / max(time.time() - start_time, 1e-6),
-                            "mean_shaped_reward": float(np.mean(rollout_shaped_rewards)) if rollout_shaped_rewards else 0.0,
-                            "mean_intrinsic_reward": float(np.mean(rollout_intrinsic_rewards)) if rollout_intrinsic_rewards else 0.0,
-                            "mean_phi": float(np.mean(rollout_phis)) if rollout_phis else 0.0,
-                            "mean_confidence": float(np.mean(rollout_confidences)) if rollout_confidences else 0.0,
-                            **cars_stats,
-                            **mean_intrinsic_stats,
-                            **intrinsic_update_stats,
-                            **mean_losses,
-                        }
-                    )
+                    update_event = {
+                        "type": "ppo_update",
+                        "global_step": global_step,
+                        "episodes": episodes,
+                        "fps": global_step / max(time.time() - start_time, 1e-6),
+                        "mean_shaped_reward": float(np.mean(rollout_shaped_rewards)) if rollout_shaped_rewards else 0.0,
+                        "mean_intrinsic_reward": float(np.mean(rollout_intrinsic_rewards)) if rollout_intrinsic_rewards else 0.0,
+                        "mean_phi": float(np.mean(rollout_phis)) if rollout_phis else 0.0,
+                        "mean_confidence": float(np.mean(rollout_confidences)) if rollout_confidences else 0.0,
+                        **cars_stats,
+                        **mean_intrinsic_stats,
+                        **intrinsic_update_stats,
+                        **mean_losses,
+                    }
+                    event_writer.write(update_event)
+                    if wandb_run is not None:
+                        wandb_run.log(_wandb_payload("update", update_event), step=global_step)
 
                 if cfg.save_interval > 0 and global_step >= next_save_step:
                     self._save_checkpoint(
@@ -568,6 +614,11 @@ class PPOTrainer:
             extra_state=intrinsic.checkpoint_state() if intrinsic is not None else None,
         )
         envs.close()
+        if wandb_run is not None:
+            wandb_run.summary["final/global_step"] = global_step
+            wandb_run.summary["final/episodes"] = episodes
+            wandb_run.summary["final/checkpoint"] = str(final_checkpoint)
+            wandb_run.finish()
         return TrainResult(
             run_dir=run_dir,
             global_step=global_step,

@@ -72,6 +72,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--update_epochs", type=int, default=None)
     parser.add_argument("--learning_rate", type=float, default=None)
     parser.add_argument("--run_dir", default=None)
+    parser.add_argument("--wandb", action="store_true", help="Log training metrics to Weights & Biases.")
+    parser.add_argument("--wandb_project", default=None)
+    parser.add_argument("--wandb_entity", default=None)
+    parser.add_argument("--wandb_group", default=None)
+    parser.add_argument("--wandb_name", default=None)
+    parser.add_argument("--wandb_mode", choices=["online", "offline", "disabled"], default=None)
     parser.add_argument("--device", default="auto")
     parser.add_argument("--smoke", action="store_true", help="Run the lightweight CARS core smoke check.")
     return parser
@@ -145,6 +151,18 @@ def apply_overrides(config_path: str, args: argparse.Namespace):
         cfg = replace(cfg, ppo=replace(cfg.ppo, learning_rate=args.learning_rate))
     if args.run_dir is not None:
         cfg = replace(cfg, logging=replace(cfg.logging, run_dir=args.run_dir))
+    if args.wandb:
+        cfg = replace(cfg, logging=replace(cfg.logging, wandb_enabled=True))
+    if args.wandb_project is not None:
+        cfg = replace(cfg, logging=replace(cfg.logging, wandb_project=args.wandb_project))
+    if args.wandb_entity is not None:
+        cfg = replace(cfg, logging=replace(cfg.logging, wandb_entity=args.wandb_entity))
+    if args.wandb_group is not None:
+        cfg = replace(cfg, logging=replace(cfg.logging, wandb_group=args.wandb_group))
+    if args.wandb_name is not None:
+        cfg = replace(cfg, logging=replace(cfg.logging, wandb_name=args.wandb_name))
+    if args.wandb_mode is not None:
+        cfg = replace(cfg, logging=replace(cfg.logging, wandb_mode=args.wandb_mode))
     return cfg
 
 

@@ -59,3 +59,9 @@ logging:
   jsonl_name: events.jsonl
   diagnostics_name: diagnostics.jsonl
   diagnostics_interval: 1
+  wandb_enabled: false
+  wandb_project: carsrl
+  wandb_entity:
+  wandb_group:
+  wandb_name:
+  wandb_mode: online

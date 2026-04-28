@@ -49,3 +49,25 @@ def test_history_and_skip_flags_are_configurable() -> None:
 
     assert history_cfg.cars.include_history is True
     assert shape_on_skip_cfg.cars.neutral_on_skip is False
+
+
+def test_wandb_flags_are_configurable() -> None:
+    cfg = _cfg_from_args(
+        "--algo",
+        "ppo_cars",
+        "--wandb",
+        "--wandb_project",
+        "cars-test",
+        "--wandb_group",
+        "pilot",
+        "--wandb_name",
+        "run-0",
+        "--wandb_mode",
+        "offline",
+    )
+
+    assert cfg.logging.wandb_enabled is True
+    assert cfg.logging.wandb_project == "cars-test"
+    assert cfg.logging.wandb_group == "pilot"
+    assert cfg.logging.wandb_name == "run-0"
+    assert cfg.logging.wandb_mode == "offline"

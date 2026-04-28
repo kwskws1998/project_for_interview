@@ -70,6 +70,12 @@ class LoggingConfig:
     jsonl_name: str = "events.jsonl"
     diagnostics_name: str = "diagnostics.jsonl"
     diagnostics_interval: int = 1
+    wandb_enabled: bool = False
+    wandb_project: str = "carsrl"
+    wandb_entity: str | None = None
+    wandb_group: str | None = None
+    wandb_name: str | None = None
+    wandb_mode: str = "online"
 
 
 @dataclass(frozen=True)
