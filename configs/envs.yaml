@@ -1,0 +1,22 @@
+sanity:
+  - MiniGrid-DoorKey-8x8-v0
+  - MiniGrid-DoorKey-16x16-v0
+
+main:
+  - MiniGrid-KeyCorridorS4R3-v0
+  - MiniGrid-KeyCorridorS5R3-v0
+  - MiniGrid-KeyCorridorS6R3-v0
+  - MiniGrid-ObstructedMaze-2Dlh-v0
+  - MiniGrid-ObstructedMaze-2Dlhb-v0
+  - MiniGrid-ObstructedMaze-Full-v0
+
+seeds:
+  - 0
+  - 1
+  - 2
+  - 3
+
+beta_ablation:
+  - 0.05
+  - 0.1
+  - 0.2

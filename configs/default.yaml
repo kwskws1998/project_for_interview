@@ -1,0 +1,61 @@
+algo: ppo_cars
+env_id: MiniGrid-DoorKey-8x8-v0
+seed: 0
+total_steps: 1000000
+eval_interval: 25000
+save_interval: 100000
+
+ppo:
+  gamma: 0.99
+  gae_lambda: 0.95
+  learning_rate: 0.00025
+  rollout_steps: 128
+  num_envs: 8
+  update_epochs: 4
+  minibatch_size: 256
+  clip_coef: 0.2
+  ent_coef: 0.01
+  vf_coef: 0.5
+  max_grad_norm: 0.5
+
+cars:
+  enabled: true
+  appraiser: qwen
+  beta: 0.1
+  gamma: 0.99
+  reward_clip_min: -0.05
+  reward_clip_max: 0.05
+  use_confidence: true
+  direct_reward: false
+  schedule: every_n
+  interval: 8
+  neutral_on_skip: true
+  include_history: false
+  history_length: 8
+  cache_path: runs/cache/cars_appraisals.jsonl
+
+slm:
+  model_name: Qwen/Qwen2.5-1.5B-Instruct
+  device: auto
+  dtype: auto
+  load_in_4bit: false
+  local_files_only: false
+  max_new_tokens: 128
+  temperature: 0.0
+
+intrinsic:
+  coef: 0.05
+  learning_rate: 0.0001
+  embedding_dim: 128
+  scale_fac: 0.5
+  reward_clip_min: 0.0
+  reward_clip_max: 1.0
+  update_epochs: 1
+  train_batch_size: 256
+
+logging:
+  run_dir: runs
+  csv_name: metrics.csv
+  jsonl_name: events.jsonl
+  diagnostics_name: diagnostics.jsonl
+  diagnostics_interval: 1
